@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Configuración local (puede contener paths personales)
+config.yml
+
+# Outputs generados (Excel, caché)
+outputs/*.xlsx
+outputs/*.json
+outputs/cache/
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

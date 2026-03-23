@@ -1,0 +1,30 @@
+# ============================================================
+# requirements.txt — Sistema Cuantitativo Unificado
+# Instalar con: pip install -r requirements.txt
+# Colab: !pip install -r requirements.txt
+# ============================================================
+
+# --- Datos financieros ---
+yfinance>=0.2.36
+pandas-datareader>=0.10.0
+
+# --- Manipulación de datos ---
+pandas>=2.0.0
+numpy>=1.24.0
+
+# --- Optimización y estadística ---
+scipy>=1.10.0
+
+# --- Machine Learning ---
+scikit-learn>=1.3.0
+
+# --- Excel / reportes ---
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+
+# --- Configuración ---
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# --- HTTP (fallbacks y noticias futuras) ---
+requests>=2.31.0
