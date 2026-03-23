@@ -1,0 +1,150 @@
+# ============================================================
+# config.example.yml — Configuración del Sistema Cuantitativo
+# ============================================================
+# INSTRUCCIONES:
+#   1. Copia este archivo como config.yml
+#   2. Edita config.yml con tus parámetros
+#   3. Ejecuta: python main.py
+#
+# Los valores aquí son los DEFAULTS razonables.
+# Puedes cambiar cualquier parámetro sin tocar el código.
+# ============================================================
+
+# ------------------------------------------------------------
+# UNIVERSO DE ACTIVOS A ANALIZAR
+# Agrega o elimina tickers según tu necesidad.
+# Soporta: acciones (AAPL), ETF (SPY), índices (^GSPC)
+# ------------------------------------------------------------
+tickers:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - NVDA
+  - META
+  - SPY
+  - QQQ
+  - XLF
+  - XLE
+
+# ------------------------------------------------------------
+# MONEDAS
+# base_currency: moneda en que quieres ver precios y portafolio
+# valuation_currency: moneda para el DCF y WACC
+# Opciones comunes: USD, MXN, EUR
+# ------------------------------------------------------------
+base_currency: USD
+valuation_currency: USD
+
+# ------------------------------------------------------------
+# PORTAFOLIO
+# ------------------------------------------------------------
+portfolio:
+  years_history: 5          # años de historial para beta y covarianza (2-10)
+  risk_multiplier: 1.0      # cap de varianza = mult × Var(SPY). Más alto = más riesgo
+  budget_min: 10000         # inversión mínima en moneda base
+  budget_max: 50000         # inversión máxima en moneda base
+  na_threshold: 0.70        # % mínimo de precios válidos por ticker (0.5-0.95)
+  lambda_adj: 0.40          # peso de señal DCF en retornos esperados ajustados (0-1)
+  # Pesos fijos opcionales. Dejar vacío {} para optimización libre.
+  # Ejemplo: {AAPL: 0.20, MSFT: 0.15}
+  fixed_weights: {}
+
+# ------------------------------------------------------------
+# HORIZONTES DE ANÁLISIS (en días hábiles o días calendario)
+# El sistema generará señales y scores para cada horizonte.
+# ------------------------------------------------------------
+horizons:
+  short: [5, 10, 15]        # días hábiles
+  medium: [30]              # días calendario (~1 mes)
+  long: [90, 180, 365]      # días calendario (3M, 6M, 1Y)
+
+# ------------------------------------------------------------
+# PARÁMETROS MACRO
+# ------------------------------------------------------------
+macro:
+  focus_years: 5            # años recientes para el análisis de conclusiones
+  download_years: 12        # años de descarga (más = más contexto histórico)
+  knn_neighbors: 150        # vecinos históricos similares para kNN
+  horizon_bdays: 5          # horizonte base del modelo macro (días hábiles)
+
+# ------------------------------------------------------------
+# VALUACIÓN DCF
+# ------------------------------------------------------------
+dcf:
+  years_projection: 7       # horizonte explícito de proyección (5-10 recomendado)
+  fade_method: linear       # "linear" (lineal) o "hmodel" (H-Model)
+  g_explicit_bounds: [-0.10, 0.20]   # rango válido para g de proyección explícita
+  term_growth_dev:           # rango terminal para países desarrollados (USD, EUR)
+    - 0.015
+    - 0.025
+  term_growth_em:            # rango terminal para mercados emergentes
+    - 0.020
+    - 0.035
+
+# ------------------------------------------------------------
+# RIESGO: TASAS Y ERP
+# ------------------------------------------------------------
+risk:
+  # ERP para USD (S&P 500 blended)
+  erp_min: 0.035
+  erp_max: 0.060
+  erp_fallback: 0.055       # usado si no se puede calcular el ERP blended
+  usd_rf_fallback: 0.040    # tasa libre de riesgo fallback si FRED no responde
+
+  # Tasas y ERP por moneda (reemplaza los input() del sistema original)
+  # Añade aquí cualquier moneda adicional que uses.
+  country_rates:
+    MXN:
+      rf: 0.090             # tasa libre de riesgo en México (CETES aprox)
+      erp: 0.070            # prima de riesgo para México
+    EUR:
+      rf: 0.030
+      erp: 0.060
+    GBP:
+      rf: 0.040
+      erp: 0.055
+
+  # Caps de ETR (tasa efectiva de impuestos) por país
+  etr_caps:
+    Mexico: 0.30
+    "United States": 0.21
+    "United Kingdom": 0.25
+    Germany: 0.30
+    France: 0.28
+    Japan: 0.30
+    Canada: 0.26
+    _DEFAULT: 0.30
+
+# ------------------------------------------------------------
+# OUTPUT
+# ------------------------------------------------------------
+output:
+  excel_filename: "resultado_analisis_financiero.xlsx"
+  output_dir: "outputs"
+  language: "es"            # "es" = español, "en" = inglés (futuro)
+  include_raw_data: true    # incluir hoja RAW_DATA_SUMMARY en Excel
+
+# ------------------------------------------------------------
+# DATOS Y CACHÉ
+# ------------------------------------------------------------
+data:
+  fred_api_key: ""          # opcional — mejora límites de descarga de FRED
+                            # Obtén uno gratis en https://fred.stlouisfed.org/docs/api/api_key.html
+  cache_dir: "outputs/cache"
+  portfolio_memory_file: "outputs/portfolios_memory.json"
+  # Tickers canónicos (normalización de nombres)
+  canonical_tickers:
+    TSMC: TSM
+    "BRK.B": BRK-B
+    "BRK.A": BRK-A
+
+# ------------------------------------------------------------
+# FLAGS — activa/desactiva módulos del sistema
+# ------------------------------------------------------------
+flags:
+  run_valuation: true       # Análisis DCF y salud financiera
+  run_macro: true           # Análisis macro (tasas, inflación, commodities)
+  run_portfolio: true       # Optimización de portafolio
+  run_news: false           # Noticias y sentimiento (Fase 4 — en desarrollo)
+  run_sector_signals: true  # Señales por sector (kNN + logística)
+  debug_mode: false         # Mensajes de diagnóstico adicionales
