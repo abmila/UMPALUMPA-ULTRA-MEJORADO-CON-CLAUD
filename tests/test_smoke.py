@@ -9,8 +9,8 @@ Cómo correr:
     python tests/test_smoke.py          # desde el directorio raíz del proyecto
     python -m pytest tests/ -v          # con pytest
 
-Estado: Tests de Fase 1 implementados.
-        Tests de Fases 2-5 marcados como TODO.
+Estado: Tests de Fase 1 y Fase 2 implementados.
+        Tests de Fases 3-5 marcados como TODO.
 """
 
 import importlib
@@ -297,6 +297,135 @@ def test_stub_excel():
 
 
 # ─────────────────────────────────────────────
+# FASE 2: Tests de data_sources, macro_data, feature_engineering
+# ─────────────────────────────────────────────
+
+@test("data_sources: _download_one_ticker existe y es callable")
+def test_ds_download_one():
+    from src.data_sources import _download_one_ticker
+    assert callable(_download_one_ticker)
+
+
+@test("data_sources: download_prices_yahoo existe y es callable")
+def test_ds_download_prices():
+    from src.data_sources import download_prices_yahoo
+    assert callable(download_prices_yahoo)
+
+
+@test("data_sources: fred_get_series existe y es callable")
+def test_ds_fred_get():
+    from src.data_sources import fred_get_series
+    assert callable(fred_get_series)
+
+
+@test("data_sources: get_risk_free_usd existe y es callable")
+def test_ds_rf():
+    from src.data_sources import get_risk_free_usd
+    assert callable(get_risk_free_usd)
+
+
+@test("data_sources: get_blended_erp_usd existe y es callable")
+def test_ds_erp():
+    from src.data_sources import get_blended_erp_usd
+    assert callable(get_blended_erp_usd)
+
+
+@test("macro_data: FRED_CANDIDATES tiene ≥25 series")
+def test_md_fred_candidates():
+    from src.macro_data import FRED_CANDIDATES
+    assert len(FRED_CANDIDATES) >= 25, f"Solo {len(FRED_CANDIDATES)} series FRED"
+
+
+@test("macro_data: YAHOO_MACRO tiene ≥10 series")
+def test_md_yahoo_macro():
+    from src.macro_data import YAHOO_MACRO
+    assert len(YAHOO_MACRO) >= 10, f"Solo {len(YAHOO_MACRO)} series Yahoo"
+
+
+@test("macro_data: SECTOR_UNIVERSE tiene 11 sectores")
+def test_md_sectors():
+    from src.macro_data import SECTOR_UNIVERSE
+    assert len(SECTOR_UNIVERSE) == 11, f"Esperados 11 sectores, hay {len(SECTOR_UNIVERSE)}"
+
+
+@test("macro_data: download_all_macro es callable")
+def test_md_download_all():
+    from src.macro_data import download_all_macro
+    assert callable(download_all_macro)
+
+
+@test("macro_data: compute_derived_macro es callable")
+def test_md_derived():
+    from src.macro_data import compute_derived_macro
+    assert callable(compute_derived_macro)
+
+
+@test("feature_engineering: FEATURE_NICE_NAMES tiene ≥30 entries")
+def test_fe_nice_names():
+    from src.feature_engineering import FEATURE_NICE_NAMES
+    assert len(FEATURE_NICE_NAMES) >= 30, f"Solo {len(FEATURE_NICE_NAMES)} features"
+
+
+@test("feature_engineering: yoy_change funciona con serie simple")
+def test_fe_yoy():
+    import pandas as pd
+    from src.feature_engineering import yoy_change
+    s = pd.Series(range(300), dtype=float)
+    result = yoy_change(s, periods=252)
+    assert len(result) == 300
+    assert result.dropna().shape[0] > 0
+
+
+@test("feature_engineering: rolling_delta funciona con serie simple")
+def test_fe_delta():
+    import pandas as pd
+    from src.feature_engineering import rolling_delta
+    s = pd.Series(range(50), dtype=float)
+    result = rolling_delta(s, window=5)
+    assert len(result) == 50
+    # After shift of 5, all deltas should be 5
+    assert result.dropna().iloc[0] == 5.0
+
+
+@test("feature_engineering: get_state_features es callable")
+def test_fe_state():
+    from src.feature_engineering import get_state_features
+    assert callable(get_state_features)
+
+
+@test("feature_engineering: get_model_features es callable")
+def test_fe_model():
+    from src.feature_engineering import get_model_features
+    assert callable(get_model_features)
+
+
+@test("market_data: SECTOR_ETFS tiene 11 entradas")
+def test_mkt_sectors():
+    from src.market_data import SECTOR_ETFS
+    assert len(SECTOR_ETFS) == 11
+
+
+@test("market_data: get_returns funciona con DataFrame simple")
+def test_mkt_returns():
+    import pandas as pd
+    import numpy as np
+    from src.market_data import get_returns
+    prices = pd.DataFrame({
+        "A": np.arange(100, 110, dtype=float),
+        "B": np.arange(200, 210, dtype=float),
+    })
+    rets = get_returns(prices, freq="D")
+    assert rets.shape[1] == 2
+    assert rets.shape[0] > 0
+
+
+@test("risk_country_fx: get_rf_erp es callable")
+def test_rcfx_rf_erp():
+    from src.risk_country_fx import get_rf_erp
+    assert callable(get_rf_erp)
+
+
+# ─────────────────────────────────────────────
 # Archivos originales intactos
 # ─────────────────────────────────────────────
 
@@ -321,7 +450,7 @@ def test_original_2_exists():
 def run_all_tests():
     print()
     print("=" * 60)
-    print("  SMOKE TESTS — Sistema Cuantitativo Unificado v0.1")
+    print("  SMOKE TESTS — Sistema Cuantitativo Unificado v0.2")
     print("=" * 60)
     print()
 
@@ -371,6 +500,39 @@ def run_all_tests():
     print()
     print("  ── excel_report ─────────────────────────────────────")
     test_stub_excel()
+
+    print()
+    print("  ── FASE 2: data_sources ─────────────────────────────")
+    test_ds_download_one()
+    test_ds_download_prices()
+    test_ds_fred_get()
+    test_ds_rf()
+    test_ds_erp()
+
+    print()
+    print("  ── FASE 2: macro_data ───────────────────────────────")
+    test_md_fred_candidates()
+    test_md_yahoo_macro()
+    test_md_sectors()
+    test_md_download_all()
+    test_md_derived()
+
+    print()
+    print("  ── FASE 2: feature_engineering ──────────────────────")
+    test_fe_nice_names()
+    test_fe_yoy()
+    test_fe_delta()
+    test_fe_state()
+    test_fe_model()
+
+    print()
+    print("  ── FASE 2: market_data ──────────────────────────────")
+    test_mkt_sectors()
+    test_mkt_returns()
+
+    print()
+    print("  ── FASE 2: risk_country_fx ──────────────────────────")
+    test_rcfx_rf_erp()
 
     print()
     print("=" * 60)

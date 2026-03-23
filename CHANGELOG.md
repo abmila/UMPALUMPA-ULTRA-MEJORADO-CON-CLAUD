@@ -6,6 +6,31 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [0.2.0] — 2026-03-23 — Fase 2: Datos, Macro y Feature Engineering
+
+### Añadido
+- `src/data_sources.py` — Implementación completa: Yahoo Finance (por ticker con fallbacks), FRED (pandas_datareader + HTTP fallback), FX spot/series, risk-free rate (FRED→Yahoo→config), ERP blended (SPY 5/10/30Y)
+- `src/market_data.py` — Implementación completa: precios con limpieza, 11 ETFs de sector S&P 500, metadata de tickers, retornos diarios/semanales/mensuales, forward returns multi-horizonte
+- `src/macro_data.py` — Implementación completa: 30 series FRED + 12 series Yahoo macro + 11 sectores, build_macro_df() con forward-fill, compute_derived_macro() (inflación YoY, curva de bonos, spreads), curva de rendimientos UST
+- `src/feature_engineering.py` — Implementación completa: 35 features macro con nombres en español, YoY changes, rolling deltas, forward returns, selección de features para kNN y logística
+- `src/risk_country_fx.py` — Implementación completa: get_rf_erp() sin input() (lee config para monedas no-USD), normalización de monedas, FX spot/series
+- `main.py` — Actualizado a v0.2.0: run_phase2_macro() con pipeline completo de 5 pasos, generación de Excel con 10 hojas (RESUMEN_MERCADO, CURVA_BONOS, TASAS, INFLACION, COMMODITIES_FX, PRECIOS_TICKERS, FEATURES_MACRO, RAW_DATA, SUPUESTOS, WARNINGS)
+
+### Rescatado de scripts originales
+- `_download_one_ticker()`, `download_universe_yahoo()` → `src/data_sources.py`
+- `fred_try_series()`, `download_fred_candidates()` → `src/data_sources.py` (con HTTP fallback añadido)
+- `get_risk_free_usd()`, `blended_erp_usd()` → `src/data_sources.py`
+- `get_rf_erp_with_sources()` → `src/risk_country_fx.py:get_rf_erp()` (sin input())
+- `yoy_from_level()`, `delta()` → `src/feature_engineering.py`
+- Catálogos FRED (30 series) y Yahoo macro (12 series) → `src/macro_data.py`
+- Curva de bonos y spreads → `src/macro_data.py:compute_derived_macro()`
+
+### Corregido
+- pandas_datareader incompatible con pandas actual — añadido fallback HTTP directo a FRED CSV
+- Import de pandas_datareader ahora captura TypeError además de ImportError
+
+---
+
 ## [0.1.0] — 2026-03-23 — Fase 1: Esqueleto y Arquitectura
 
 ### Añadido
@@ -55,13 +80,6 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 ---
 
 ## [Próximos Releases]
-
-### [0.2.0] — Fase 2: Datos y Macro (pendiente)
-- Implementación completa de `data_sources.py`
-- Implementación de `market_data.py` y `macro_data.py`
-- Implementación de `feature_engineering.py`
-- Datos descargables con 3-5 tickers demo
-- Primera versión de Excel con datos macro reales
 
 ### [0.3.0] — Fase 3: Valuación y Salud (pendiente)
 - Implementación completa de `valuation_dcf.py`

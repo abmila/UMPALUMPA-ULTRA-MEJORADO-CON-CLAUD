@@ -9,7 +9,7 @@
 | Fase | Estado | Descripción |
 |------|--------|-------------|
 | Fase 1 | ✅ COMPLETADA | Auditoría, diseño y esqueleto |
-| Fase 2 | 🔲 PENDIENTE | Datos, configuración y capa macro/mercado |
+| Fase 2 | ✅ COMPLETADA | Datos, configuración y capa macro/mercado |
 | Fase 3 | 🔲 PENDIENTE | Valuación y salud financiera |
 | Fase 4 | 🔲 PENDIENTE | Modelos de mercado, sectores, incertidumbre |
 | Fase 5 | 🔲 PENDIENTE | Reporting final, Excel, README, pruebas |
@@ -43,52 +43,57 @@ python main.py --demo   # mismo resultado con tickers de ejemplo
 
 ---
 
-## Fase 2 — PENDIENTE 🔲
+## Fase 2 — COMPLETADA ✅
 
 **Objetivo:** Capa confiable de descarga y limpieza de datos
 
-### Módulos a implementar:
+### Módulos implementados:
 
 #### `src/data_sources.py`
-- [ ] `download_prices_yahoo()` — precios con fallbacks por ticker
-- [ ] `download_universe_with_fallbacks()` — universo con alternativas
-- [ ] `fred_get_series()` — serie individual de FRED
-- [ ] `fred_get_multiple()` — múltiples series con fallbacks
-- [ ] `get_fx_spot()` — tipo de cambio spot
-- [ ] `get_fx_series()` — serie histórica FX con inversión automática
-- [ ] `get_risk_free_usd()` — UST10Y desde FRED → Yahoo → config
+- [x] `download_prices_yahoo()` — precios con fallbacks por ticker
+- [x] `download_universe_with_fallbacks()` — universo con alternativas
+- [x] `fred_get_series()` — serie individual de FRED (pdr + HTTP fallback)
+- [x] `fred_get_multiple()` — múltiples series con fallbacks
+- [x] `get_fx_spot()` — tipo de cambio spot con par inverso
+- [x] `get_fx_series()` — serie histórica FX con inversión automática
+- [x] `get_risk_free_usd()` — FRED:DGS10 → Yahoo:^TNX → config fallback
+- [x] `get_blended_erp_usd()` — ERP de SPY 5/10/30Y CAGR
 
 #### `src/market_data.py`
-- [ ] `get_prices()` — precios limpios, convertidos a moneda base
-- [ ] `get_sector_etf_prices()` — 11 ETFs de sector
-- [ ] `get_ticker_info()` — metadata: sector, país, industria, moneda
-- [ ] `get_returns()` — retornos en frecuencia configurable
+- [x] `get_prices()` — precios limpios con min_points
+- [x] `get_sector_etf_prices()` — 11 ETFs de sector S&P 500
+- [x] `get_ticker_info()` — metadata: sector, país, industria, moneda
+- [x] `get_returns()` — retornos diarios/semanales/mensuales
+- [x] `get_forward_returns()` — retornos futuros multi-horizonte
 
 #### `src/macro_data.py`
-- [ ] `download_all_macro()` — todas las series FRED + Yahoo macro
-- [ ] `build_yield_curve()` — estructura temporal de tasas
-- [ ] `get_yield_curve_today()` — curva actual puntual
-- [ ] `get_spread_2y10y()` — spread 10Y-2Y histórico
+- [x] `download_all_macro()` — 30 series FRED + 12 Yahoo + 11 sectores
+- [x] `build_macro_df()` — DataFrame unificado con forward-fill
+- [x] `compute_derived_macro()` — inflación YoY, curva, spreads, MXNUSD
+- [x] `build_yield_curve()` — estructura temporal UST
+- [x] `get_yield_curve_today()` — curva actual puntual
+- [x] `get_macro_summary()` — última lectura de indicadores clave
 
 #### `src/feature_engineering.py`
-- [ ] `yoy_change()` — cambio YoY de niveles (inflación)
-- [ ] `rolling_delta()` — cambio en ventana N (momentum de tasas)
-- [ ] `build_macro_features()` — DataFrame de features para modelos
-- [ ] `build_forward_returns()` — retornos futuros (labels)
+- [x] `yoy_change()` — cambio YoY de niveles (252 días)
+- [x] `rolling_delta()` — cambio en ventana N (momentum)
+- [x] `build_macro_features()` — 35 features con nombres en español + deltas 1m
+- [x] `build_forward_returns()` — retornos futuros logarítmicos
+- [x] `get_state_features()` — selección para kNN (12 preferidos)
+- [x] `get_model_features()` — selección para logística (niveles + deltas)
 
 #### `src/risk_country_fx.py`
-- [ ] `get_risk_free_usd()` — FRED → Yahoo → config fallback
-- [ ] `blended_erp_usd()` — ERP de SPY 5/10/30Y
-- [ ] `get_rf_erp()` — rf + erp para cualquier moneda (sin input())
-- [ ] `fx_spot()` — tipo de cambio spot
-- [ ] `get_fx_series()` — historial FX con inversión automática
+- [x] `get_rf_erp()` — rf + erp para cualquier moneda (sin input())
+- [x] `normalize_price_currency()` — GBp→GBP, ZAc→ZAR
+- [x] `fx_spot()` — tipo de cambio spot
+- [x] `fx_series()` — historial FX
 
-### Entregables de Fase 2:
-- [ ] `main.py --fase2` corre descarga con 3-5 tickers demo
-- [ ] Imprime resumen de series descargadas
-- [ ] No truena si falta una serie
-- [ ] Primera hoja real en Excel: TASAS_EUA_MX
-- [ ] Log claro de fuentes de datos
+### Entregables verificados:
+- [x] `python main.py --demo` corre pipeline completo con tickers demo
+- [x] Imprime resumen de series descargadas
+- [x] No truena si falta una serie (manejo graceful de errores)
+- [x] Excel con 10 hojas macro/mercado
+- [x] Log claro de fuentes de datos y warnings
 
 ---
 
