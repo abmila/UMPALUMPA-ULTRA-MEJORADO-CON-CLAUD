@@ -79,14 +79,62 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
-## [Próximos Releases]
+## [0.3.0] — 2026-03-24 — Fase 3: Valuación DCF, Salud Financiera y Portafolio
 
-### [0.3.0] — Fase 3: Valuación y Salud (pendiente)
-- Implementación completa de `valuation_dcf.py`
-- Implementación de `financial_health.py`
-- Implementación de `risk_country_fx.py`
-- Implementación de `portfolio_optimizer.py`
-- Excel con hojas DCF y ratios
+### Añadido
+- `src/valuation_dcf.py` — Implementación completa:
+  - `load_alias_builtin()` — Diccionario canónico de alias (50+ patrones contables)
+  - `extract_financial_data(ticker, years_hist=6)` — Extrae IS/BS/CF de yfinance con fallbacks robustos
+  - `compute_beta(ticker, price_currency, rf_annual, years=5)` — Beta semanal 5Y con winsorización P1-P99 y validación R²
+  - `compute_wacc(beta, rf, erp, cost_of_debt, etr, equity_value, debt_value)` — WACC con pesos de mercado
+  - `dcf_valuation(ticker, financial_data, rf, erp)` — DCF industrial de 2 etapas con escenarios bear/base/bull
+  - `run_dcf_universe(tickers, valuation_currency='USD')` — DCF para universo de tickers → DataFrame
+
+- `src/financial_health.py` — Implementación completa:
+  - `compute_ratios(financial_data)` — Ratios de liquidez, apalancamiento, cobertura, rentabilidad, calidad de flujo
+  - `compute_health_score(ratios)` — Score 0-100 ponderado (25% liquidez, 35% apalancamiento, 20% cobertura, 20% flujo)
+  - `detect_financial_flags(ratios)` — Lista de flags de riesgo (LIQUIDEZ_BAJA, APALANCAMIENTO_ALTO, etc.)
+  - `run_health_universe(tickers, financial_data_map)` — Health score para universo → DataFrame
+
+- `src/portfolio_optimizer.py` — Implementación completa:
+  - `build_cov_matrix(returns, ridge_lambda=1e-4)` — Matriz covarianza con regularización ridge
+  - `align_mu_sigma(dcf_df, cov_ann, tickers, lambda_adj=0.40)` — Alinea retornos esperados (CAPM + señal DCF)
+  - `max_sharpe(mu, sigma, rf, sigma_cap)` — Optimización Max Sharpe con cap de varianza
+  - `compute_quantities(weights, tickers, prices, budget_min, budget_max)` — Cantidades enteras por budget
+  - `save_portfolio(name, tickers, weights, quantities, base_currency)` — Guarda en JSON
+  - `list_portfolios()` — Lista portafolios guardados
+
+- `main.py` — Actualizado a v0.3.0:
+  - `run_phase3_valuation(cfg)` — Orquesta pipeline completo de Fase 3 (5 pasos)
+  - `_write_phase3_excel()` — Genera Excel con hojas DCF_SALUD y SALUD_FINANCIERA
+  - Estado de banner actualizado
+
+### Rescatado de scripts originales
+- Funciones de extracción financiera → `src/valuation_dcf.py` (extract_time_series_v4, líneas 287-407)
+- Beta semanal robusto → `src/valuation_dcf.py:compute_beta()` (líneas 534-576)
+- Cálculo de WACC y DCF industrial → `src/valuation_dcf.py` (líneas 718-845)
+- Cálculos financieros y deuda → `src/financial_health.py` (líneas 710-849)
+- Max Sharpe con sigma cap → `src/portfolio_optimizer.py` (líneas 1025-1037)
+- Align_mu_sigma con lambda ajustable → `src/portfolio_optimizer.py` (líneas 1011-1023)
+
+### Implementado
+- Fallbacks robustos en TODAS partes: si falta dato X, usa Y; si falta Y, usa Z
+- Manejo de NaN graceful en ratios y scores
+- Validaciones R² y N mínimo para beta
+- Escenarios bear (-30% g, +50bps WACC) / base / bull (+30% g, -50bps WACC)
+- Flags de completitud y calidad de datos en valuación
+- DataFrame unificado de análisis (DCF + Health)
+
+### Corregido
+- Normalización de D&A (asegurar positivo desde CF o IS)
+- Fallback de ΔNWC desde balance trimestral si falta en anual
+- Capea ETR por país según config
+- Deuda bruta en WACC (no deuda neta)
+- Puente EV → Equity con deuda neta correcta
+
+---
+
+## [Próximos Releases]
 
 ### [0.4.0] — Fase 4: Modelos y Señales (pendiente)
 - Implementación de `sector_model.py` (kNN + logística)

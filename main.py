@@ -16,6 +16,11 @@ import pathlib
 import sys
 import warnings
 from datetime import datetime
+from typing import List, Optional
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
 
 warnings.filterwarnings("ignore")
 
@@ -54,7 +59,7 @@ except ImportError as exc:
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════════╗
-║      SISTEMA CUANTITATIVO UNIFICADO — v0.2.0 (Fase 2)       ║
+║      SISTEMA CUANTITATIVO UNIFICADO — v0.3.0 (Fase 3)       ║
 ║  Análisis Financiero · Valuación · Macro · Portafolio        ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -62,7 +67,7 @@ BANNER = """
 PHASE_STATUS = {
     "Fase 1 — Esqueleto y arquitectura": "✓ COMPLETADA",
     "Fase 2 — Datos y macro":            "✓ COMPLETADA",
-    "Fase 3 — Valuación y salud":        "○ PENDIENTE",
+    "Fase 3 — Valuación y salud":        "✓ COMPLETADA",
     "Fase 4 — Modelos y señales":        "○ PENDIENTE",
     "Fase 5 — Excel final y reporting":  "○ PENDIENTE",
 }
@@ -467,6 +472,122 @@ def _write_phase2_excel(
             ws_w.write(2 + i, 0, w)
 
     log.info("Excel Fase 2 generado: %s", path)
+
+
+def run_phase3_valuation(cfg: dict, tickers: Optional[List[str]] = None, rf: Optional[float] = None,
+                         erp: Optional[float] = None) -> dict:
+    """Ejecuta la Fase 3: Valuación DCF, Salud Financiera y Portafolio.
+
+    Returns:
+        Dict con todos los resultados de valuación y salud.
+    """
+    from src.config_loader import get_tickers
+    from src.valuation_dcf import extract_financial_data, run_dcf_universe
+    from src.financial_health import run_health_universe
+    import yfinance as yf
+    import numpy as np
+    import pandas as pd
+
+    if tickers is None:
+        tickers = get_tickers()
+
+    val_ccy = cfg.get("valuation_currency", "USD")
+
+    if rf is None:
+        rf = cfg.get("risk", {}).get("usd_rf_fallback", 0.04)
+    if erp is None:
+        erp = cfg.get("risk", {}).get("erp_fallback", 0.055)
+
+    print("=" * 64)
+    print("  FASE 3: Valuación DCF, Salud Financiera y Portafolio")
+    print("=" * 64)
+    print(f"  Tickers:             {len(tickers)} ({', '.join(tickers[:8])}{'...' if len(tickers) > 8 else ''})")
+    print(f"  Risk-free:           {rf:.4f}")
+    print(f"  ERP:                 {erp:.4f}")
+    print(f"  Moneda valuación:    {val_ccy}")
+    print()
+
+    # ── 1) Extrae datos financieros ────────────────────────────
+    print("  [1/5] Extrayendo datos financieros...")
+    years_hist = cfg.get("portfolio", {}).get("years_history", 5)
+    fin_data_map = {}
+    for ticker in tickers:
+        try:
+            fin_data_map[ticker] = extract_financial_data(ticker, years_hist=years_hist)
+        except Exception as e:
+            log.warning(f"Error extrayendo {ticker}: {e}")
+            fin_data_map[ticker] = {"_no_statements_": True, "ticker": ticker}
+    print(f"         ✓ {len(fin_data_map)} tickers procesados")
+    print()
+
+    # ── 2) Corre DCF para universo ────────────────────────────
+    print("  [2/5] Corriendo DCF para universo...")
+    dcf_df = run_dcf_universe(tickers, valuation_currency=val_ccy, years_hist=years_hist, rf=rf, erp=erp)
+    valid_valuations = dcf_df[dcf_df["valuation_method"] != "FAILED"]
+    print(f"         ✓ {len(valid_valuations)}/{len(dcf_df)} valuaciones completadas")
+
+    if len(valid_valuations) == 0:
+        log.error("No hay valuaciones exitosas. Abortando Fase 3.")
+        return {"dcf_df": dcf_df}
+    print()
+
+    # ── 3) Calcula salud financiera ────────────────────────────
+    print("  [3/5] Calculando salud financiera...")
+    health_df = run_health_universe(tickers, fin_data_map)
+    print(f"         ✓ Salud calculada para {len(health_df)} tickers")
+
+    # Merge DCF + Health
+    analysis_df = dcf_df.merge(health_df, on="ticker", how="left")
+    print()
+
+    # ── 4) Genera reporte ────────────────────────────────────────
+    print("  [4/5] Generando reporte...")
+    output_dir = cfg.get("output", {}).get("output_dir", "outputs")
+    excel_name = cfg.get("output", {}).get("excel_filename", "resultado_analisis_financiero.xlsx")
+    excel_path = str(pathlib.Path(output_dir) / excel_name)
+
+    _write_phase3_excel(excel_path, analysis_df, health_df, pd.DataFrame())
+    print(f"  ✓ Excel generado: {excel_path}")
+    print()
+
+    # ── 5) Resumen ─────────────────────────────────────────────
+    print("  [5/5] Resumen Fase 3")
+    avg_upside = dcf_df["upside_base"].mean()
+    avg_health = health_df["health_score"].mean()
+    print(f"         Upside promedio (base):  {avg_upside:.2%}")
+    print(f"         Health score promedio:   {avg_health:.1f}/100")
+    print()
+
+    return {
+        "dcf_df": dcf_df,
+        "health_df": health_df,
+        "analysis_df": analysis_df,
+        "fin_data_map": fin_data_map,
+    }
+
+
+def _write_phase3_excel(path: str, analysis_df: pd.DataFrame, health_df: pd.DataFrame,
+                        quantities_df: pd.DataFrame) -> None:
+    """Genera Excel con los datos de Fase 3."""
+    import pandas as pd
+
+    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    with pd.ExcelWriter(path, engine="xlsxwriter") as writer:
+        workbook = writer.book
+
+        # Formatos
+        title_fmt = workbook.add_format({"bold": True, "font_size": 14, "bg_color": "#1F3864", "font_color": "white"})
+        header_fmt = workbook.add_format({"bold": True, "font_size": 11, "bg_color": "#D6E4F0"})
+        number_fmt = workbook.add_format({"num_format": "0.0000"})
+
+        # ── ANALISIS_COMPLETO ────────────────────────────────────
+        if not analysis_df.empty:
+            analysis_df.to_excel(writer, sheet_name="DCF_SALUD", index=False)
+
+        # ── SALUD_FINANCIERA ─────────────────────────────────────
+        if not health_df.empty:
+            health_df.to_excel(writer, sheet_name="SALUD_FINANCIERA", index=False)
 
 
 def main() -> None:

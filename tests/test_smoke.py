@@ -9,8 +9,8 @@ Cómo correr:
     python tests/test_smoke.py          # desde el directorio raíz del proyecto
     python -m pytest tests/ -v          # con pytest
 
-Estado: Tests de Fase 1 y Fase 2 implementados.
-        Tests de Fases 3-5 marcados como TODO.
+Estado: Tests de Fase 1, 2 y 3 implementados.
+        Tests de Fases 4-5 marcados como TODO.
 """
 
 import importlib
@@ -426,6 +426,100 @@ def test_rcfx_rf_erp():
 
 
 # ─────────────────────────────────────────────
+# FASE 3: Tests de valuación y salud financiera
+# ─────────────────────────────────────────────
+
+@test("valuation_dcf: extract_financial_data es callable")
+def test_val_extract_fin():
+    from src.valuation_dcf import extract_financial_data
+    assert callable(extract_financial_data)
+
+
+@test("valuation_dcf: compute_beta es callable")
+def test_val_compute_beta():
+    from src.valuation_dcf import compute_beta
+    assert callable(compute_beta)
+
+
+@test("valuation_dcf: compute_wacc es callable")
+def test_val_compute_wacc():
+    from src.valuation_dcf import compute_wacc
+    assert callable(compute_wacc)
+
+
+@test("valuation_dcf: dcf_valuation es callable")
+def test_val_dcf_valuation():
+    from src.valuation_dcf import dcf_valuation
+    assert callable(dcf_valuation)
+
+
+@test("valuation_dcf: run_dcf_universe es callable")
+def test_val_run_dcf_universe():
+    from src.valuation_dcf import run_dcf_universe
+    assert callable(run_dcf_universe)
+
+
+@test("financial_health: compute_ratios es callable")
+def test_fh_compute_ratios():
+    from src.financial_health import compute_ratios
+    assert callable(compute_ratios)
+
+
+@test("financial_health: compute_health_score es callable")
+def test_fh_health_score():
+    from src.financial_health import compute_health_score
+    assert callable(compute_health_score)
+
+
+@test("financial_health: detect_financial_flags es callable")
+def test_fh_detect_flags():
+    from src.financial_health import detect_financial_flags
+    assert callable(detect_financial_flags)
+
+
+@test("financial_health: run_health_universe es callable")
+def test_fh_run_health_universe():
+    from src.financial_health import run_health_universe
+    assert callable(run_health_universe)
+
+
+@test("portfolio_optimizer: build_cov_matrix es callable")
+def test_po_build_cov():
+    from src.portfolio_optimizer import build_cov_matrix
+    assert callable(build_cov_matrix)
+
+
+@test("portfolio_optimizer: align_mu_sigma es callable")
+def test_po_align_mu():
+    from src.portfolio_optimizer import align_mu_sigma
+    assert callable(align_mu_sigma)
+
+
+@test("portfolio_optimizer: max_sharpe es callable")
+def test_po_max_sharpe():
+    from src.portfolio_optimizer import max_sharpe
+    assert callable(max_sharpe)
+
+
+@test("portfolio_optimizer: compute_quantities es callable")
+def test_po_compute_quantities():
+    from src.portfolio_optimizer import compute_quantities
+    assert callable(compute_quantities)
+
+
+@test("portfolio_optimizer: save_portfolio es callable")
+def test_po_save_portfolio():
+    from src.portfolio_optimizer import save_portfolio
+    assert callable(save_portfolio)
+
+
+@test("portfolio_optimizer: list_portfolios es callable")
+def test_po_list_portfolios():
+    from src.portfolio_optimizer import list_portfolios
+    assert callable(list_portfolios)
+
+
+# ─────────────────────────────────────────────
 # Archivos originales intactos
 # ─────────────────────────────────────────────
 
@@ -450,7 +544,7 @@ def test_original_2_exists():
 def run_all_tests():
     print()
     print("=" * 60)
-    print("  SMOKE TESTS — Sistema Cuantitativo Unificado v0.2")
+    print("  SMOKE TESTS — Sistema Cuantitativo Unificado v0.3")
     print("=" * 60)
     print()
 
@@ -533,6 +627,30 @@ def run_all_tests():
     print()
     print("  ── FASE 2: risk_country_fx ──────────────────────────")
     test_rcfx_rf_erp()
+
+    print()
+    print("  ── FASE 3: valuation_dcf ────────────────────────────")
+    test_val_extract_fin()
+    test_val_compute_beta()
+    test_val_compute_wacc()
+    test_val_dcf_valuation()
+    test_val_run_dcf_universe()
+
+    print()
+    print("  ── FASE 3: financial_health ─────────────────────────")
+    test_fh_compute_ratios()
+    test_fh_health_score()
+    test_fh_detect_flags()
+    test_fh_run_health_universe()
+
+    print()
+    print("  ── FASE 3: portfolio_optimizer ──────────────────────")
+    test_po_build_cov()
+    test_po_align_mu()
+    test_po_max_sharpe()
+    test_po_compute_quantities()
+    test_po_save_portfolio()
+    test_po_list_portfolios()
 
     print()
     print("=" * 60)

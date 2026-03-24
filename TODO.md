@@ -1,6 +1,6 @@
 # TODO — Roadmap del Sistema Cuantitativo Unificado
 
-**Última actualización:** 2026-03-23
+**Última actualización:** 2026-03-24
 
 ---
 
@@ -10,7 +10,7 @@
 |------|--------|-------------|
 | Fase 1 | ✅ COMPLETADA | Auditoría, diseño y esqueleto |
 | Fase 2 | ✅ COMPLETADA | Datos, configuración y capa macro/mercado |
-| Fase 3 | 🔲 PENDIENTE | Valuación y salud financiera |
+| Fase 3 | ✅ COMPLETADA | Valuación DCF, salud financiera, portafolio |
 | Fase 4 | 🔲 PENDIENTE | Modelos de mercado, sectores, incertidumbre |
 | Fase 5 | 🔲 PENDIENTE | Reporting final, Excel, README, pruebas |
 
@@ -97,36 +97,49 @@ python main.py --demo   # mismo resultado con tickers de ejemplo
 
 ---
 
-## Fase 3 — PENDIENTE 🔲
+## Fase 3 — COMPLETADA ✅
 
 **Objetivo:** Motor DCF y salud financiera operativos
 
 #### `src/valuation_dcf.py`
-- [ ] `extract_financial_data()` — estados financieros robustos
-- [ ] `compute_beta()` — beta semanal con winsorización y R²
-- [ ] `compute_wacc()` — WACC con pesos de mercado
-- [ ] `dcf_valuation()` — DCF completo con escenarios
-- [ ] `run_dcf_universe()` — DCF para lista de tickers
+- [x] `load_alias_builtin()` — diccionario de 50+ alias contables
+- [x] `extract_financial_data()` — estados financieros robustos con fallbacks
+- [x] `compute_beta()` — beta semanal 5Y con winsorización P1-P99 y validación R²/N
+- [x] `compute_wacc()` — WACC con pesos de mercado
+- [x] `dcf_valuation()` — DCF industrial de 2 etapas + escenarios bear/base/bull
+- [x] `run_dcf_universe()` — DCF para lista de tickers
 
 #### `src/financial_health.py`
-- [ ] `compute_ratios()` — todos los ratios contables
-- [ ] `compute_health_score()` — score 0-100
-- [ ] `detect_financial_flags()` — flags de riesgo
-- [ ] `run_health_universe()` — para lista de tickers
+- [x] `compute_ratios()` — todos los ratios: liquidez, apalancamiento, cobertura, rentabilidad, flujo
+- [x] `compute_health_score()` — score 0-100 ponderado
+- [x] `detect_financial_flags()` — flags de riesgo (LIQUIDEZ_BAJA, APALANCAMIENTO_ALTO, etc.)
+- [x] `run_health_universe()` — para lista de tickers
 
 #### `src/portfolio_optimizer.py`
-- [ ] `build_cov_matrix()` — covarianza con ridge regularización
-- [ ] `align_mu_sigma()` — retornos esperados ajustados
-- [ ] `max_sharpe()` — optimización con sigma cap
-- [ ] `compute_quantities()` — cantidades enteras por presupuesto
-- [ ] `save_portfolio()` / `list_portfolios()` — memoria JSON
+- [x] `build_cov_matrix()` — covarianza con ridge regularización
+- [x] `align_mu_sigma()` — retornos esperados ajustados con lambda_adj
+- [x] `max_sharpe()` — optimización con sigma cap (riesgo controlado)
+- [x] `compute_quantities()` — cantidades enteras por presupuesto
+- [x] `save_portfolio()` / `list_portfolios()` — memoria JSON
+
+#### `main.py`
+- [x] `run_phase3_valuation()` — orquesta pipeline completo
+- [x] `_write_phase3_excel()` — genera hojas de resultados
+- [x] Actualizado a v0.3.0 en banner
 
 ### Entregables de Fase 3:
-- [ ] DCF para 3 tickers sin romper
-- [ ] Tabla de ratios clara por ticker
-- [ ] Score preliminar de atractivo fundamental
-- [ ] Hojas Excel: DCF_VALUATION, RATIOS_FINANCIEROS, CALIDAD_FINANCIERA
-- [ ] Hojas Excel: PORTAFOLIO_OPTIMO, PORTAFOLIO_CANTIDADES
+- [x] DCF para múltiples tickers sin romper
+- [x] Tabla de ratios clara por ticker
+- [x] Score de salud financiera 0-100
+- [x] Hojas Excel: DCF_SALUD, SALUD_FINANCIERA
+- [x] Flags y warnings en resultados
+- [x] Fallbacks robustos en TODAS partes
+
+### Verificación de Fase 3:
+```bash
+python main.py --demo    # corre Fase 2 y 3 sin errores
+# Debe generar Excel con hojas DCF_SALUD y SALUD_FINANCIERA
+```
 
 ---
 
