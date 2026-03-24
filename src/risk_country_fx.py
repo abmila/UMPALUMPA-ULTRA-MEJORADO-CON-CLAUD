@@ -6,29 +6,32 @@ Maneja todo lo relacionado con:
   - Tasa libre de riesgo (USD desde FRED/Yahoo, otras monedas desde config)
   - Equity Risk Premium (ERP blended desde historial SPY o config)
   - Conversión de monedas y normalización (GBp → GBP, etc.)
-  - Riesgo país
 
-Sin input() — todos los parámetros de monedas no-USD se leen de config.yml
-bajo risk.country_rates.
+Sin input() — todo desde config.yml.
 
-Origen: rescatado de umpa_ultra_mejorado_2_0_15_01_2026.py
-        (get_risk_free_usd, blended_erp_usd, get_rf_erp_with_sources,
-         normalize_price_currency, get_fx_series, fx_spot — líneas 129-495)
-
-Estado: STUB — implementación completa en Fase 2
+Rescatado de umpa_ultra_mejorado_2_0_15_01_2026.py líneas 103-495.
 """
 
 import logging
 from typing import Dict, Optional, Tuple
 
+import numpy as np
 import pandas as pd
+
+from src.config_loader import CFG, get_country_rf_erp
+from src.data_sources import (
+    get_risk_free_usd,
+    get_blended_erp_usd,
+    get_fx_spot,
+    get_fx_series,
+)
 
 log = logging.getLogger(__name__)
 
-# Monedas cotizadas en fracciones (penny stocks de GBP, etc.)
+# Monedas cotizadas en fracciones
 CCY_NORMALIZATION: Dict[str, Tuple[str, float]] = {
-    "GBp": ("GBP", 0.01),   # peniques → libras
-    "ZAc": ("ZAR", 0.01),   # centavos ZAR → rand
+    "GBp": ("GBP", 0.01),
+    "ZAc": ("ZAR", 0.01),
 }
 
 
@@ -58,85 +61,63 @@ def normalize_price_currency(
     return ccy, series, last_price
 
 
-def get_risk_free_usd() -> Tuple[float, str]:
-    """Obtiene la tasa libre de riesgo USD (UST 10Y).
-
-    Intenta en orden: FRED:DGS10 → Yahoo:^TNX → config fallback.
-
-    Returns:
-        Tupla (tasa_decimal, fuente_string).
-
-    TODO (Fase 2): Implementar.
-    """
-    raise NotImplementedError("Fase 2: implementar risk-free USD")
-
-
-def blended_erp_usd(rf: float) -> float:
-    """Calcula ERP blended de EUA desde retornos históricos de SPY.
-
-    Promedia ERP implícitos a 5, 10 y 30 años. Aplica bounds de config.
-
-    Args:
-        rf: Tasa libre de riesgo actual.
-
-    Returns:
-        ERP como decimal (ej. 0.052).
-
-    TODO (Fase 2): Implementar.
-    """
-    raise NotImplementedError("Fase 2: implementar ERP blended USD")
-
-
 def get_rf_erp(currency: str) -> Tuple[float, float, str, str]:
     """Devuelve (rf, erp, rf_source, erp_source) para una moneda dada.
 
-    Para USD: intenta calcular desde datos de mercado.
-    Para otras monedas: lee de config.risk.country_rates (sin input()).
+    Para USD: calcula desde datos de mercado (FRED/Yahoo/SPY).
+    Para otras monedas: lee de config.risk.country_rates.
+
+    Sin input() — reemplaza get_rf_erp_with_sources() del script original.
 
     Args:
         currency: Código de moneda ('USD', 'MXN', 'EUR', etc.).
 
     Returns:
         Tupla (rf, erp, fuente_rf, fuente_erp).
-
-    TODO (Fase 2): Implementar. Usa config_loader.get_country_rf_erp() para no-USD.
     """
-    raise NotImplementedError("Fase 2: implementar get_rf_erp")
+    risk_cfg = CFG.get("risk", {})
+    c = currency.upper()
+
+    if c == "USD":
+        fallback_rf = float(risk_cfg.get("usd_rf_fallback", 0.04))
+        rf, rf_src = get_risk_free_usd(fallback=fallback_rf)
+
+        erp_min = float(risk_cfg.get("erp_min", 0.035))
+        erp_max = float(risk_cfg.get("erp_max", 0.060))
+        erp_fallback = float(risk_cfg.get("erp_fallback", 0.055))
+        erp, erp_src = get_blended_erp_usd(rf, erp_min, erp_max, erp_fallback)
+        erp = float(np.clip(erp, erp_min, erp_max))
+
+        return rf, erp, rf_src, erp_src
+
+    # Para cualquier otra moneda: leer de config
+    rf_cfg, erp_cfg = get_country_rf_erp(c)
+    log.info("RF/ERP para %s desde config: rf=%.4f, erp=%.4f", c, rf_cfg, erp_cfg)
+    return rf_cfg, erp_cfg, f"config:{c}", f"config:{c}"
 
 
 def fx_spot(from_ccy: str, to_ccy: str) -> float:
-    """Tipo de cambio spot entre dos monedas.
+    """Tipo de cambio spot (delega a data_sources).
 
     Args:
         from_ccy: Moneda origen.
         to_ccy: Moneda destino.
 
     Returns:
-        Tipo de cambio. Retorna 1.0 si las monedas son iguales o en caso de error.
-
-    TODO (Fase 2): Implementar con yfinance, fallback a 1.0 con warning.
+        Tipo de cambio. 1.0 si misma moneda o error.
     """
-    if not from_ccy or not to_ccy or from_ccy == to_ccy:
-        return 1.0
-    raise NotImplementedError("Fase 2: implementar fx_spot")
+    return get_fx_spot(from_ccy, to_ccy)
 
 
-def get_fx_series(from_ccy: str, to_ccy: str, start: str) -> pd.Series:
-    """Serie histórica de tipo de cambio entre dos monedas.
-
-    Intenta el par directo y luego el inverso si el directo falla.
+def fx_series(from_ccy: str, to_ccy: str, start: str) -> pd.Series:
+    """Serie histórica de FX (delega a data_sources).
 
     Args:
         from_ccy: Moneda origen.
         to_ccy: Moneda destino.
-        start: Fecha de inicio.
+        start: 'YYYY-MM-DD'.
 
     Returns:
         pd.Series con tipo de cambio diario.
-        Devuelve serie de 1.0 si las monedas son iguales o hay error.
-
-    TODO (Fase 2): Implementar.
     """
-    if not from_ccy or not to_ccy or from_ccy == to_ccy:
-        return pd.Series(dtype=float)
-    raise NotImplementedError("Fase 2: implementar fx_series")
+    return get_fx_series(from_ccy, to_ccy, start)
